@@ -1,0 +1,24 @@
+name: Update Papers
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs at 00:00 UTC every day
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  update-papers:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+    - run: npm install
+    - run: node update-papers-js.js
+    - name: Commit and push if changed
+      run: |
+        git config --global user.name 'GitHub Action'
+        git config --global user.email 'action@github.com'
+        git add -A
+        git commit -m "Update papers data" || exit 0
+        git push

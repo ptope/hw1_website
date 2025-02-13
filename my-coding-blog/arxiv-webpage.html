@@ -1,0 +1,120 @@
+<!-- my-coding-blog.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Latest arXiv Papers - Medical Research</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex">
+    <!-- Sidebar -->
+    <div class="w-64 bg-gray-800 min-h-screen flex flex-col">
+        <div class="p-4">
+            <h1 class="text-white text-2xl font-semibold">Latest Papers</h1>
+            <p id="last-updated" class="text-sm text-gray-600 mb-4"></p>
+
+        </div>
+        <nav class="flex-1 p-4">
+            <ul class="space-y-2">
+                <li><a href="index.html" class="text-gray-300 hover:text-white block">Home</a></li>
+                <li><a href="pacman-game.html" class="text-gray-300 hover:text-white block">Pac-Man Game</a></li>
+                <li><a href="arxiv-webpage.html" class="text-gray-300 hover:text-white block">Paper Archive</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1">
+        <div class="container mx-auto px-8 py-8">
+            <h1 class="text-3xl font-bold mb-8">Latest arXiv Papers - Medical Research</h1>
+            <div class="mb-4">
+                <div class="flex space-x-2">
+                    <button onclick="filterByKeyword('all')" class="filter-btn bg-blue-500 text-white px-4 py-2 rounded">All</button>
+                    <button onclick="filterByKeyword('opioid')" class="filter-btn bg-green-500 text-white px-4 py-2 rounded">Opioid</button>
+                    <button onclick="filterByKeyword('analgesics')" class="filter-btn bg-yellow-500 text-white px-4 py-2 rounded">Analgesics</button>
+                    <button onclick="filterByKeyword('cancer')" class="filter-btn bg-red-500 text-white px-4 py-2 rounded">Cancer</button>
+                </div>
+            </div>
+            <div id="papers-container" class="space-y-6">
+                <!-- Papers will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allPapers = [];
+    
+        async function loadPapers() {
+            try {
+                const response = await fetch('papers_data.json');
+                allPapers = await response.json();
+                displayPapers(allPapers);
+                
+                // Add this to display the last update time
+                const lastUpdated = new Date(response.headers.get('last-modified'));
+                document.getElementById('last-updated').textContent = `Last updated: ${lastUpdated.toLocaleString()}`;
+            } catch (error) {
+                console.error('Error loading papers:', error);
+            }
+        }
+
+        function displayPapers(papers) {
+            const container = document.getElementById('papers-container');
+            container.innerHTML = '';
+
+            papers.forEach(paper => {
+                const paperElement = document.createElement('div');
+                paperElement.className = 'bg-white p-6 rounded-lg shadow-md';
+
+                const keywordBadges = paper.keywords.map(keyword => {
+                    const colors = {
+                        'opioid': 'bg-green-100 text-green-800',
+                        'analgesics': 'bg-yellow-100 text-yellow-800',
+                        'cancer': 'bg-red-100 text-red-800'
+                    };
+                    return `<span class="inline-block ${colors[keyword]} px-2 py-1 text-xs font-semibold rounded-full mr-2">${keyword}</span>`;
+                }).join('');
+
+                paperElement.innerHTML = `
+                    <div class="mb-4">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">${paper.title}</h2>
+                        <p class="text-lg font-bold text-gray-700 mb-4">${paper.authors}</p>
+                        <div class="mb-2">
+                            ${keywordBadges}
+                        </div>
+                        <p class="text-gray-600 mt-4">${paper.abstract}</p>
+                    </div>
+                    <div class="flex space-x-4 mt-4">
+                        <a href="${paper.pdf_url}" target="_blank" class="text-blue-500 hover:text-blue-700 font-semibold">PDF</a>
+                        ${paper.doi ? `<a href="https://doi.org/${paper.doi}" target="_blank" class="text-blue-500 hover:text-blue-700 font-semibold">DOI</a>` : ''}
+                    </div>
+                `;
+                container.appendChild(paperElement);
+            });
+        }
+
+        function filterByKeyword(keyword) {
+            const filteredPapers = keyword === 'all' 
+                ? allPapers 
+                : allPapers.filter(paper => paper.keywords.includes(keyword));
+            displayPapers(filteredPapers);
+        }
+
+        // Load papers when page loads
+        document.addEventListener('DOMContentLoaded', loadPapers);
+    </script>
+    <script>
+        const allPapers = [
+          // Paste your JSON data here
+        ];
+        
+        function loadPapers() {
+          displayPapers(allPapers);
+        }
+        
+        // Make sure this line is present to load papers when the page loads
+        document.addEventListener('DOMContentLoaded', loadPapers);
+        </script>
+</body>
+</html>

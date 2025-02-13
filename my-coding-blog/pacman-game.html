@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pacman with Maze</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: black;
+            font-family: Arial, sans-serif;
+        }
+        #game-container {
+            text-align: center;
+        }
+        #gameBoard {
+            border: 2px solid blue;
+            background-color: black;
+        }
+        #score {
+            color: white;
+            font-size: 24px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="score">Score: <span id="scoreValue">0</span></div>
+        <canvas id="gameBoard" width="400" height="400"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameBoard');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('scoreValue');
+        const cellSize = 20;
+        const gridSize = 20;
+        
+        let score = 0;
+        let pacman = {
+            x: 1,
+            y: 1,
+            direction: 0,
+            mouthOpen: true
+        };
+        
+        let ghosts = [
+            { x: 18, y: 18, color: 'red', direction: Math.floor(Math.random() * 4) },
+            { x: 18, y: 1, color: 'pink', direction: Math.floor(Math.random() * 4) }
+        ];
+        
+        // Define maze layout: 0 = empty (dot), 1 = wall
+        const mazeLayout = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1],
+            [1,0,1,1,1,0,1,0,1,1,1,1,0,1,0,1,1,1,0,1],
+            [1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
+            [1,1,1,0,1,1,1,0,1,1,1,1,0,1,1,1,0,1,1,1],
+            [1,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,1,0,1,0,0,1,0,1,1,1,1,1,0,1],
+            [1,0,0,0,0,0,1,0,1,0,0,1,0,1,0,0,0,0,0,1],
+            [1,1,1,1,1,0,1,0,1,0,0,1,0,1,0,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,1,0,1,1,1,1,0,1,1,1,1,1,0,1],
+            [1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1],
+            [1,1,1,1,1,0,1,1,1,0,0,1,1,1,0,1,1,1,1,1],
+            [1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1],
+            [1,0,1,1,1,0,1,0,1,1,1,1,0,1,0,1,1,1,0,1],
+            [1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
+            [1,1,1,0,1,1,1,0,1,1,1,1,0,1,1,1,0,1,1,1],
+            [1,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,1,0,1,0,0,1,0,1,1,1,1,1,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+        
+        // Initialize grid with maze layout
+        let grid = [];
+        for (let i = 0; i < gridSize; i++) {
+            grid[i] = [];
+            for (let j = 0; j < gridSize; j++) {
+                grid[i][j] = mazeLayout[j][i] === 1 ? 1 : 2; // 1 for walls, 2 for dots
+            }
+        }
+        
+        function drawPacman() {
+            ctx.beginPath();
+            const centerX = pacman.x * cellSize + cellSize/2;
+            const centerY = pacman.y * cellSize + cellSize/2;
+            const radius = cellSize/2;
+            
+            let startAngle = 0.2;
+            let endAngle = 2 * Math.PI - 0.2;
+            
+            if (pacman.mouthOpen) {
+                if (pacman.direction === 0) {
+                    startAngle = 0.2;
+                    endAngle = 2 * Math.PI - 0.2;
+                } else if (pacman.direction === 1) {
+                    startAngle = Math.PI/2 - 0.2;
+                    endAngle = Math.PI/2 + 2 * Math.PI - 0.2;
+                } else if (pacman.direction === 2) {
+                    startAngle = Math.PI + 0.2;
+                    endAngle = Math.PI + 2 * Math.PI - 0.2;
+                } else if (pacman.direction === 3) {
+                    startAngle = -Math.PI/2 + 0.2;
+                    endAngle = -Math.PI/2 + 2 * Math.PI - 0.2;
+                }
+            }
+            
+            ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+            ctx.lineTo(centerX, centerY);
+            ctx.fillStyle = 'yellow';
+            ctx.fill();
+            ctx.closePath();
+        }
+        
+        function drawGhosts() {
+            ghosts.forEach(ghost => {
+                ctx.beginPath();
+                const centerX = ghost.x * cellSize + cellSize/2;
+                const centerY = ghost.y * cellSize + cellSize/2;
+                
+                // Ghost body
+                ctx.arc(centerX, centerY - 2, cellSize/2, Math.PI, 0, false);
+                ctx.lineTo(centerX + cellSize/2, centerY + cellSize/2 - 2);
+                
+                // Ghost "skirt"
+                for (let i = 0; i < 3; i++) {
+                    const curve = cellSize/6;
+                    ctx.arc(centerX - cellSize/2 + curve + (i * curve * 2), 
+                           centerY + cellSize/2 - 2,
+                           curve, 0, Math.PI, true);
+                }
+                
+                ctx.lineTo(centerX - cellSize/2, centerY - 2);
+                ctx.fillStyle = ghost.color;
+                ctx.fill();
+                ctx.closePath();
+                
+                // Eyes
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(centerX - 3, centerY - 4, 2, 0, 2 * Math.PI);
+                ctx.arc(centerX + 3, centerY - 4, 2, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+        }
+        
+        function drawGrid() {
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    if (grid[i][j] === 1) {
+                        ctx.fillStyle = 'blue';
+                        ctx.fillRect(i * cellSize, j * cellSize, cellSize, cellSize);
+                    } else if (grid[i][j] === 2) {
+                        ctx.fillStyle = 'white';
+                        ctx.beginPath();
+                        ctx.arc(i * cellSize + cellSize/2, j * cellSize + cellSize/2, 2, 0, 2 * Math.PI);
+                        ctx.fill();
+                    }
+                }
+            }
+        }
+        
+        function update() {
+            // Eat dots
+            if (grid[pacman.x][pacman.y] === 2) {
+                grid[pacman.x][pacman.y] = 0;
+                score += 10;
+                scoreElement.textContent = score;
+            }
+            
+            // Move ghosts
+            ghosts.forEach(ghost => {
+                if (Math.random() < 0.3) { // Increased randomness for better maze navigation
+                    // Try to avoid getting stuck by preferring unvisited directions
+                    let possibleDirections = [];
+                    
+                    // Check all possible directions
+                    if (grid[ghost.x + 1][ghost.y] !== 1) possibleDirections.push(0);
+                    if (grid[ghost.x][ghost.y + 1] !== 1) possibleDirections.push(1);
+                    if (grid[ghost.x - 1][ghost.y] !== 1) possibleDirections.push(2);
+                    if (grid[ghost.x][ghost.y - 1] !== 1) possibleDirections.push(3);
+                    
+                    if (possibleDirections.length > 0) {
+                        ghost.direction = possibleDirections[Math.floor(Math.random() * possibleDirections.length)];
+                    }
+                }
+                
+                let newX = ghost.x;
+                let newY = ghost.y;
+                
+                if (ghost.direction === 0) newX++;
+                if (ghost.direction === 1) newY++;
+                if (ghost.direction === 2) newX--;
+                if (ghost.direction === 3) newY--;
+                
+                if (grid[newX][newY] !== 1) {
+                    ghost.x = newX;
+                    ghost.y = newY;
+                }
+            });
+            
+            // Check collision with ghosts
+            ghosts.forEach(ghost => {
+                if (ghost.x === pacman.x && ghost.y === pacman.y) {
+                    alert('Game Over! Score: ' + score);
+                    location.reload();
+                }
+            });
+            
+            // Check win condition (all dots eaten)
+            let dotsRemaining = false;
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    if (grid[i][j] === 2) {
+                        dotsRemaining = true;
+                        break;
+                    }
+                }
+                if (dotsRemaining) break;
+            }
+            
+            if (!dotsRemaining) {
+                alert('You Win! Score: ' + score);
+                location.reload();
+            }
+            
+            // Animation
+            pacman.mouthOpen = !pacman.mouthOpen;
+        }
+        
+        function draw() {
+            drawGrid();
+            drawPacman();
+            drawGhosts();
+        }
+        
+        function gameLoop() {
+            update();
+            draw();
+            setTimeout(gameLoop, 100);
+        }
+        
+        document.addEventListener('keydown', (e) => {
+            let newX = pacman.x;
+            let newY = pacman.y;
+            
+            if (e.key === 'ArrowRight') {
+                newX++;
+                pacman.direction = 0;
+            }
+            if (e.key === 'ArrowDown') {
+                newY++;
+                pacman.direction = 1;
+            }
+            if (e.key === 'ArrowLeft') {
+                newX--;
+                pacman.direction = 2;
+            }
+            if (e.key === 'ArrowUp') {
+                newY--;
+                pacman.direction = 3;
+            }
+            
+            if (grid[newX][newY] !== 1) {
+                pacman.x = newX;
+                pacman.y = newY;
+            }
+        });
+        
+        gameLoop();
+    </script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #000;
+}
+#scoreboard {
+    color: #fff;
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+canvas {
+    background-color: #000;
+    border: 2px solid #fff;
+}
+.red-dot {
+    width: 5px;
+    height: 5px;
+    background-color: red;
+    border-radius: 50%;
+}
+#gameOverText {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: red;
+    font-size: 48px;
+    display: none;
+}
